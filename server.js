@@ -47,22 +47,36 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', async (req, res) => {
   maybeTriggerBatchRefresh();
   const q = (req.query.q || '').trim();
+  const sort = ['recent', 'alpha', 'roi', 'price'].includes(req.query.sort)
+    ? req.query.sort
+    : 'recent';
+  const orderBy = {
+    recent: `created_at DESC`,
+    alpha: `title COLLATE NOCASE ASC`,
+    roi: `(purchase_price > 0 AND last_price_krw IS NOT NULL) DESC,
+          CASE WHEN purchase_price > 0 AND last_price_krw IS NOT NULL
+               THEN (last_price_krw - purchase_price) * 1.0 / purchase_price
+               ELSE 0 END DESC,
+          created_at DESC`,
+    price: `(last_price_krw IS NOT NULL) DESC, last_price_krw DESC, created_at DESC`,
+  }[sort];
+
+  const columns = `id, title, artist, year, genre, cover_version,
+                   purchase_price, last_price_krw`;
   let result;
   if (q) {
     const like = `%${q}%`;
     result = await db.execute({
-      sql: `SELECT id, title, artist, year, genre, cover_version
+      sql: `SELECT ${columns}
             FROM albums
             WHERE title LIKE ? OR artist LIKE ? OR genre LIKE ? OR label LIKE ?
-            ORDER BY created_at DESC`,
+            ORDER BY ${orderBy}`,
       args: [like, like, like, like],
     });
   } else {
-    result = await db.execute(
-      `SELECT id, title, artist, year, genre, cover_version FROM albums ORDER BY created_at DESC`
-    );
+    result = await db.execute(`SELECT ${columns} FROM albums ORDER BY ${orderBy}`);
   }
-  res.render('index', { albums: result.rows, q });
+  res.render('index', { albums: result.rows, q, sort });
 });
 
 // Manual batch refresh trigger (for external cron / GitHub Actions)

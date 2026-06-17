@@ -51,8 +51,25 @@
       </header>
       <form class="sheet-search" action="/" method="get" role="search">
         <input type="search" name="q" value="<%= q %>" placeholder="Search…" />
+        <input type="hidden" name="sort" value="<%= sort %>" />
         <button type="submit" aria-label="Search">↳</button>
       </form>
+      <nav class="sheet-sort" aria-label="Sort">
+        <% const sortOptions = [
+          { key: 'recent', label: '최신순' },
+          { key: 'alpha', label: '가나다순' },
+          { key: 'roi', label: '수익률순' },
+          { key: 'price', label: '시세순' },
+        ]; %>
+        <% sortOptions.forEach(o => {
+             const params = new URLSearchParams();
+             if (q) params.set('q', q);
+             if (o.key !== 'recent') params.set('sort', o.key);
+             const href = '/' + (params.toString() ? '?' + params.toString() : '');
+        %>
+          <a href="<%= href %>" class="sheet-sort-btn<%= sort === o.key ? ' active' : '' %>"><%= o.label %></a>
+        <% }) %>
+      </nav>
 
       <% if (q) { %>
         <p class="muted small sheet-result-line">

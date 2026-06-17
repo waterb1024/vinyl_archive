@@ -347,6 +347,30 @@ a:hover { color: var(--brass); border-bottom-color: var(--brass-soft); }
   border: none; background: transparent;
   font-size: 16px; color: var(--ink); cursor: pointer;
 }
+.sheet-sort {
+  display: flex;
+  gap: 4px;
+  padding: 6px 12px 10px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+}
+.sheet-sort-btn {
+  border: 1px solid transparent;
+  padding: 6px 12px;
+  font-family: var(--sans);
+  font-size: 12px;
+  letter-spacing: .02em;
+  color: var(--ink-mute);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.sheet-sort-btn:hover { color: var(--ink); border-color: var(--line); }
+.sheet-sort-btn.active {
+  color: var(--paper);
+  background: var(--ink);
+  border-color: var(--ink);
+}
 .sheet-result-line {
   margin: 10px 20px 0;
 }
