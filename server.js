@@ -51,7 +51,7 @@ app.get('/', async (req, res) => {
   if (q) {
     const like = `%${q}%`;
     result = await db.execute({
-      sql: `SELECT id, title, artist, year, genre
+      sql: `SELECT id, title, artist, year, genre, cover_version
             FROM albums
             WHERE title LIKE ? OR artist LIKE ? OR genre LIKE ? OR label LIKE ?
             ORDER BY created_at DESC`,
@@ -59,7 +59,7 @@ app.get('/', async (req, res) => {
     });
   } else {
     result = await db.execute(
-      `SELECT id, title, artist, year, genre FROM albums ORDER BY created_at DESC`
+      `SELECT id, title, artist, year, genre, cover_version FROM albums ORDER BY created_at DESC`
     );
   }
   res.render('index', { albums: result.rows, q });
@@ -309,7 +309,7 @@ app.get('/albums/:id', async (req, res) => {
   const result = await db.execute({
     sql: `SELECT id, title, artist, year, genre, label, notes, cover_mime, created_at,
                  purchase_price, purchase_date, discogs_release_id,
-                 last_price_usd, last_price_krw, last_priced_at
+                 last_price_usd, last_price_krw, last_priced_at, cover_version
           FROM albums WHERE id = ?`,
     args: [req.params.id],
   });
@@ -353,7 +353,7 @@ app.get('/albums/:id/cover', async (req, res) => {
   const etag = `"${crypto.createHash('md5').update(buf).digest('hex')}"`;
   if (req.headers['if-none-match'] === etag) return res.status(304).end();
   res.set('Content-Type', row.cover_mime || 'application/octet-stream');
-  res.set('Cache-Control', 'public, max-age=60, must-revalidate');
+  res.set('Cache-Control', 'public, max-age=31536000, immutable');
   res.set('ETag', etag);
   res.send(buf);
 });
@@ -362,7 +362,7 @@ app.get('/albums/:id/cover', async (req, res) => {
 app.get('/albums/:id/edit', async (req, res) => {
   const result = await db.execute({
     sql: `SELECT id, title, artist, year, genre, label, notes, cover_mime,
-                 purchase_price, purchase_date, discogs_release_id
+                 purchase_price, purchase_date, discogs_release_id, cover_version
           FROM albums WHERE id = ?`,
     args: [req.params.id],
   });
@@ -434,12 +434,12 @@ app.put('/albums/:id', upload.single('cover'), async (req, res) => {
 
   if (coverAction === 'replace') {
     await db.execute({
-      sql: `UPDATE albums SET ${setBase}, cover=?, cover_mime=? ${setPrice} WHERE id=?`,
+      sql: `UPDATE albums SET ${setBase}, cover=?, cover_mime=?, cover_version=COALESCE(cover_version,1)+1 ${setPrice} WHERE id=?`,
       args: [...baseArgs, coverBuf, coverMime, req.params.id],
     });
   } else if (coverAction === 'remove') {
     await db.execute({
-      sql: `UPDATE albums SET ${setBase}, cover=NULL, cover_mime=NULL ${setPrice} WHERE id=?`,
+      sql: `UPDATE albums SET ${setBase}, cover=NULL, cover_mime=NULL, cover_version=COALESCE(cover_version,1)+1 ${setPrice} WHERE id=?`,
       args: [...baseArgs, req.params.id],
     });
   } else {

@@ -36,6 +36,7 @@ export async function initSchema() {
     ['last_price_usd', 'REAL'],
     ['last_price_krw', 'INTEGER'],
     ['last_priced_at', 'TEXT'],
+    ['cover_version', 'INTEGER DEFAULT 1'],
   ];
   for (const [col, type] of additions) {
     if (!existing.has(col)) {

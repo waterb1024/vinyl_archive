@@ -79,7 +79,7 @@
 
       <% if (album.cover_mime) { %>
         <div class="current-cover">
-          <img src="/albums/<%= album.id %>/cover" alt="Current cover" />
+          <img src="/albums/<%= album.id %>/cover?v=<%= album.cover_version || 1 %>" alt="Current cover" />
           <label class="inline-check">
             <input type="checkbox" name="remove_cover" value="1" />
             <span>Remove current cover</span>

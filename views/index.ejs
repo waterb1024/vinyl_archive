@@ -72,9 +72,9 @@
                 data-id="<%= a.id %>"
                 data-title="<%= a.title %>"
                 data-artist="<%= a.artist %>"
-                data-cover="/albums/<%= a.id %>/cover">
+                data-cover="/albums/<%= a.id %>/cover?v=<%= a.cover_version || 1 %>">
               <button type="button" class="sheet-play" aria-label="Play <%= a.title %>">
-                <img class="sheet-thumb" src="/albums/<%= a.id %>/cover" alt="" loading="lazy" />
+                <img class="sheet-thumb" src="/albums/<%= a.id %>/cover?v=<%= a.cover_version || 1 %>" alt="" loading="lazy" />
                 <span class="sheet-play-icon" aria-hidden="true">▶</span>
               </button>
               <a class="sheet-link" href="/albums/<%= a.id %>" aria-label="View <%= a.title %>">
