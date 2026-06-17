@@ -73,6 +73,7 @@ a:hover { color: var(--brass); border-bottom-color: var(--brass-soft); }
   font-size: 22px;
   font-weight: 500;
   letter-spacing: .02em;
+  white-space: nowrap;
 }
 .site-nav .btn { border: 1px solid var(--line); }
 
@@ -518,9 +519,12 @@ a:hover { color: var(--brass); border-bottom-color: var(--brass-soft); }
   .site-header .header-row {
     padding-top: 12px;
     padding-bottom: 12px;
-    gap: 16px;
+    gap: 12px;
     min-height: 60px;
   }
+  .brand { gap: 10px; }
+  .brand-name { font-size: 17px; }
+  .site-nav .btn { padding: 7px 14px; font-size: 11px; letter-spacing: .1em; }
 }
 @media (max-width: 720px) {
   .home-layout { padding-top: 32px; padding-bottom: 24px; }
@@ -710,6 +714,7 @@ a:hover { color: var(--brass); border-bottom-color: var(--brass-soft); }
   cursor: pointer;
   transition: background .2s, color .2s, border-color .2s;
   border-radius: 0;
+  white-space: nowrap;
 }
 .btn:hover { background: var(--ink); color: var(--paper); }
 .btn-primary { background: var(--ink); color: var(--paper); }
