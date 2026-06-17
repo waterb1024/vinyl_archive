@@ -1,0 +1,17 @@
+name: Refresh prices
+
+on:
+  schedule:
+    - cron: '15 19 * * *'  # 04:15 KST daily (19:15 UTC prior day)
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: POST refresh trigger
+        run: |
+          curl -sS -X POST "${{ secrets.APP_URL }}/api/refresh-prices" \
+            -H "Authorization: Bearer ${{ secrets.REFRESH_SECRET }}" \
+            --max-time 30 \
+            --fail-with-body

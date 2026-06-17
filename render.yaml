@@ -12,3 +12,5 @@ services:
         sync: false
       - key: DISCOGS_TOKEN
         sync: false
+      - key: REFRESH_SECRET
+        sync: false

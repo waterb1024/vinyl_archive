@@ -2,6 +2,7 @@ import express from 'express';
 import methodOverride from 'method-override';
 import multer from 'multer';
 import path from 'node:path';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { db, initSchema } from './db.js';
 
@@ -44,6 +45,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // List
 app.get('/', async (req, res) => {
+  maybeTriggerBatchRefresh();
   const q = (req.query.q || '').trim();
   let result;
   if (q) {
@@ -61,6 +63,16 @@ app.get('/', async (req, res) => {
     );
   }
   res.render('index', { albums: result.rows, q });
+});
+
+// Manual batch refresh trigger (for external cron / GitHub Actions)
+app.post('/api/refresh-prices', async (req, res) => {
+  const secret = process.env.REFRESH_SECRET;
+  const auth = (req.headers.authorization || '').replace(/^Bearer\s+/, '');
+  if (!secret || auth !== secret) return res.status(401).json({ error: 'unauthorized' });
+  lastBatchRefreshAt = 0;
+  maybeTriggerBatchRefresh();
+  res.json({ status: 'started' });
 });
 
 // iTunes preview lookup
@@ -157,11 +169,45 @@ async function fetchMarketplaceMaxUsd(releaseId) {
   }
 }
 
-async function refreshPriceIfStale(album) {
+let lastBatchRefreshAt = 0;
+let batchRefreshInFlight = null;
+
+async function refreshAllAlbums() {
+  const result = await db.execute(
+    `SELECT id, discogs_release_id, last_priced_at, last_price_usd
+     FROM albums WHERE discogs_release_id IS NOT NULL`
+  );
+  let updated = 0;
+  for (const row of result.rows) {
+    try {
+      const before = row.last_priced_at;
+      const after = await refreshPriceIfStale(row, { force: true });
+      if (after.last_priced_at !== before) updated++;
+    } catch (err) {
+      console.error(`Batch refresh failed for album ${row.id}:`, err.message);
+    }
+    await new Promise((r) => setTimeout(r, 1500));
+  }
+  console.log(`Batch refresh complete: ${updated}/${result.rows.length} updated`);
+}
+
+function maybeTriggerBatchRefresh() {
+  if (batchRefreshInFlight) return;
+  if (Date.now() - lastBatchRefreshAt < 23 * 3600 * 1000) return;
+  lastBatchRefreshAt = Date.now();
+  batchRefreshInFlight = refreshAllAlbums()
+    .catch((err) => {
+      console.error('Batch refresh error:', err);
+      lastBatchRefreshAt = 0;
+    })
+    .finally(() => { batchRefreshInFlight = null; });
+}
+
+async function refreshPriceIfStale(album, { force = false } = {}) {
   if (!album.discogs_release_id) return album;
   const lastTs = album.last_priced_at ? new Date(album.last_priced_at).getTime() : 0;
   const fresh = Date.now() - lastTs < 24 * 3600 * 1000;
-  if (fresh && album.last_price_usd != null) return album;
+  if (!force && fresh && album.last_price_usd != null) return album;
   const usd = await fetchMarketplaceMaxUsd(album.discogs_release_id);
   if (usd == null) return album;
   const rate = await getUsdToKrw();
@@ -303,9 +349,13 @@ app.get('/albums/:id/cover', async (req, res) => {
     res.set('Cache-Control', 'public, max-age=60');
     return res.redirect('/placeholder.svg');
   }
+  const buf = Buffer.from(row.cover);
+  const etag = `"${crypto.createHash('md5').update(buf).digest('hex')}"`;
+  if (req.headers['if-none-match'] === etag) return res.status(304).end();
   res.set('Content-Type', row.cover_mime || 'application/octet-stream');
-  res.set('Cache-Control', 'public, max-age=31536000, immutable');
-  res.send(Buffer.from(row.cover));
+  res.set('Cache-Control', 'public, max-age=60, must-revalidate');
+  res.set('ETag', etag);
+  res.send(buf);
 });
 
 // Edit form
