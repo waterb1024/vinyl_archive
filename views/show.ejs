@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <% const pageTitle = album.title; %>
+  <%- include('partials/head', { pageTitle }) %>
+</head>
+<body>
+  <%- include('partials/header') %>
+
+  <main class="container detail">
+    <p class="muted small back"><a href="/">← Back to Collection</a></p>
+
+    <article class="detail-grid">
+      <div class="detail-cover">
+        <img src="/albums/<%= album.id %>/cover" alt="<%= album.title %> cover" />
+      </div>
+
+      <div class="detail-info">
+        <p class="eyebrow">
+          <% if (album.year) { %><%= album.year %> · <% } %><%= album.genre || 'Unfiled' %>
+        </p>
+        <h1 class="detail-title"><%= album.title %></h1>
+        <p class="detail-artist"><%= album.artist %></p>
+
+        <dl class="facts">
+          <% if (album.label) { %>
+            <div><dt>Label</dt><dd><%= album.label %></dd></div>
+          <% } %>
+          <% if (album.year) { %>
+            <div><dt>Released</dt><dd><%= album.year %></dd></div>
+          <% } %>
+          <% if (album.genre) { %>
+            <div><dt>Genre</dt><dd><%= album.genre %></dd></div>
+          <% } %>
+        </dl>
+
+        <% if (album.notes) { %>
+          <div class="notes">
+            <h2>Notes</h2>
+            <p><%= album.notes %></p>
+          </div>
+        <% } %>
+
+        <div class="actions">
+          <a href="/albums/<%= album.id %>/edit" class="btn">Edit</a>
+          <form action="/albums/<%= album.id %>?_method=DELETE" method="post"
+                onsubmit="return confirm('Delete this record?');" style="display:inline">
+            <button type="submit" class="btn btn-danger">Delete</button>
+          </form>
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

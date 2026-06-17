@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <% const pageTitle = 'Collection'; %>
+  <%- include('partials/head', { pageTitle }) %>
+</head>
+<body>
+  <%- include('partials/header') %>
+
+  <main class="container">
+    <section class="hero">
+      <p class="eyebrow">A Quiet Catalogue</p>
+      <h1 class="hero-title">Records,<br/><em>kept &amp; remembered.</em></h1>
+      <form class="search" action="/" method="get" role="search">
+        <input type="search" name="q" value="<%= q %>" placeholder="Search by title, artist, genre…" />
+        <button type="submit" aria-label="Search">↳</button>
+      </form>
+    </section>
+
+    <% if (q) { %>
+      <p class="muted small">
+        <%= albums.length %> result<%= albums.length === 1 ? '' : 's' %> for "<%= q %>" ·
+        <a href="/">clear</a>
+      </p>
+    <% } %>
+
+    <% if (albums.length === 0) { %>
+      <div class="empty">
+        <p>No records yet.</p>
+        <a href="/albums/new" class="btn">Add the first one</a>
+      </div>
+    <% } else { %>
+      <ul class="grid">
+        <% albums.forEach(a => { %>
+          <li class="card">
+            <a href="/albums/<%= a.id %>" class="card-link">
+              <div class="cover">
+                <img src="/albums/<%= a.id %>/cover" alt="" loading="lazy" />
+              </div>
+              <div class="meta">
+                <p class="title"><%= a.title %></p>
+                <p class="artist"><%= a.artist %><% if (a.year) { %> · <%= a.year %><% } %></p>
+              </div>
+            </a>
+          </li>
+        <% }) %>
+      </ul>
+    <% } %>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

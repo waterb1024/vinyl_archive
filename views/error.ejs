@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <% const pageTitle = 'Error'; %>
+  <%- include('partials/head', { pageTitle }) %>
+</head>
+<body>
+  <%- include('partials/header') %>
+  <main class="container narrow center">
+    <p class="eyebrow">Silence on the line</p>
+    <h1 class="form-title"><%= message %></h1>
+    <p class="muted"><a href="/">Return to the catalogue ↗</a></p>
+  </main>
+  <%- include('partials/footer') %>
+</body>
+</html>

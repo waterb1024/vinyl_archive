@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <% const pageTitle = 'Edit ' + album.title; %>
+  <%- include('partials/head', { pageTitle }) %>
+</head>
+<body>
+  <%- include('partials/header') %>
+
+  <main class="container narrow">
+    <p class="muted small back"><a href="/albums/<%= album.id %>">← Back to record</a></p>
+    <h1 class="form-title">Edit Record</h1>
+
+    <% if (errors.length) { %>
+      <ul class="errors">
+        <% errors.forEach(e => { %><li><%= e %></li><% }) %>
+      </ul>
+    <% } %>
+
+    <form action="/albums/<%= album.id %>?_method=PUT" method="post" enctype="multipart/form-data" class="form">
+      <label>
+        <span>Title <em>*</em></span>
+        <input type="text" name="title" required value="<%= album.title %>" />
+      </label>
+      <label>
+        <span>Artist <em>*</em></span>
+        <input type="text" name="artist" required value="<%= album.artist %>" />
+      </label>
+      <div class="row">
+        <label>
+          <span>Year</span>
+          <input type="number" name="year" min="1900" max="2100" value="<%= album.year || '' %>" />
+        </label>
+        <label>
+          <span>Genre</span>
+          <input type="text" name="genre" value="<%= album.genre || '' %>" />
+        </label>
+      </div>
+      <label>
+        <span>Label</span>
+        <input type="text" name="label" value="<%= album.label || '' %>" />
+      </label>
+      <label>
+        <span>Notes</span>
+        <textarea name="notes" rows="4"><%= album.notes || '' %></textarea>
+      </label>
+
+      <% if (album.cover_mime) { %>
+        <div class="current-cover">
+          <img src="/albums/<%= album.id %>/cover" alt="Current cover" />
+          <label class="inline-check">
+            <input type="checkbox" name="remove_cover" value="1" />
+            <span>Remove current cover</span>
+          </label>
+        </div>
+      <% } %>
+
+      <label class="file">
+        <span>Replace cover image <em class="muted">(optional, max 5MB)</em></span>
+        <input type="file" name="cover" accept="image/*" />
+      </label>
+
+      <div class="actions">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="/albums/<%= album.id %>" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>
