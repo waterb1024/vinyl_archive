@@ -26,4 +26,34 @@ export async function initSchema() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
+
+  const info = await db.execute(`PRAGMA table_info(albums)`);
+  const existing = new Set(info.rows.map((r) => r.name));
+  const additions = [
+    ['purchase_price', 'INTEGER'],
+    ['purchase_date', 'TEXT'],
+    ['discogs_release_id', 'INTEGER'],
+    ['last_price_usd', 'REAL'],
+    ['last_price_krw', 'INTEGER'],
+    ['last_priced_at', 'TEXT'],
+  ];
+  for (const [col, type] of additions) {
+    if (!existing.has(col)) {
+      await db.execute(`ALTER TABLE albums ADD COLUMN ${col} ${type}`);
+    }
+  }
+
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS price_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      album_id INTEGER NOT NULL,
+      usd REAL,
+      krw INTEGER,
+      recorded_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (album_id) REFERENCES albums(id) ON DELETE CASCADE
+    )
+  `);
+  await db.execute(
+    `CREATE INDEX IF NOT EXISTS idx_price_history_album_date ON price_history(album_id, recorded_at)`
+  );
 }

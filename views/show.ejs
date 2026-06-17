@@ -34,6 +34,56 @@
           <% } %>
         </dl>
 
+        <% if (album.purchase_price || album.last_price_krw) {
+             const krwFmt = (n) => n == null ? null : '₩' + Number(n).toLocaleString('ko-KR');
+             const purchase = album.purchase_price ? Number(album.purchase_price) : null;
+             const market = album.last_price_krw ? Number(album.last_price_krw) : null;
+             const diff = (purchase != null && market != null) ? market - purchase : null;
+        %>
+          <div class="price-block">
+            <h2>Price</h2>
+            <div class="price-row">
+              <% if (purchase != null) { %>
+                <div class="price-cell">
+                  <span class="price-label">Purchased</span>
+                  <span class="price-value"><%= krwFmt(purchase) %></span>
+                </div>
+              <% } %>
+              <% if (market != null) { %>
+                <div class="price-cell">
+                  <span class="price-label">Market high <em class="muted">(Discogs)</em></span>
+                  <span class="price-value"><%= krwFmt(market) %></span>
+                  <% if (album.last_price_usd) { %>
+                    <span class="price-sub muted small">$<%= Number(album.last_price_usd).toFixed(2) %></span>
+                  <% } %>
+                </div>
+              <% } else if (album.discogs_release_id) { %>
+                <div class="price-cell"><span class="muted small">No marketplace data yet.</span></div>
+              <% } %>
+            </div>
+            <% if (diff != null) {
+                 const sign = diff > 0 ? 'up' : (diff < 0 ? 'down' : 'flat');
+                 const word = diff > 0 ? '올랐네요' : (diff < 0 ? '내렸네요' : '동일해요');
+                 const pct = purchase > 0 ? (diff / purchase) * 100 : null;
+                 const pctStr = pct != null
+                   ? (pct > 0 ? '+' : '') + (Math.abs(pct) >= 100 ? Math.round(pct) : pct.toFixed(1)) + '%'
+                   : null;
+            %>
+              <p class="price-diff price-diff-<%= sign %>">
+                구매가보다 <strong><%= krwFmt(Math.abs(diff)) %></strong><% if (pctStr) { %> <span class="price-pct">(<%= pctStr %>)</span><% } %> <%= word %>
+              </p>
+            <% } %>
+
+            <% if (album.discogs_release_id) { %>
+              <div class="chart-section">
+                <p class="eyebrow">Monthly highs</p>
+                <div id="price-chart" data-album-id="<%= album.id %>"></div>
+                <p class="chart-status muted small" id="price-chart-status">Loading…</p>
+              </div>
+            <% } %>
+          </div>
+        <% } %>
+
         <% if (album.notes) { %>
           <div class="notes">
             <h2>Notes</h2>
@@ -53,5 +103,6 @@
   </main>
 
   <%- include('partials/footer') %>
+  <script src="/price-chart.js" defer></script>
 </body>
 </html>

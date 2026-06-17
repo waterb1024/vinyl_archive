@@ -10,3 +10,5 @@ services:
         sync: false
       - key: TURSO_AUTH_TOKEN
         sync: false
+      - key: DISCOGS_TOKEN
+        sync: false

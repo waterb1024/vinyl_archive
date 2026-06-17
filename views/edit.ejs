@@ -17,7 +17,18 @@
       </ul>
     <% } %>
 
-    <form action="/albums/<%= album.id %>?_method=PUT" method="post" enctype="multipart/form-data" class="form">
+    <% if (discogsEnabled) { %>
+      <section class="discogs">
+        <p class="eyebrow">Search Discogs <% if (album.discogs_release_id) { %><span class="muted small">· linked to release #<%= album.discogs_release_id %></span><% } %></p>
+        <div class="discogs-search">
+          <input type="search" id="discogs-q" placeholder="Album, artist, barcode…" autocomplete="off" />
+          <span class="discogs-status" id="discogs-status"></span>
+        </div>
+        <ul class="discogs-results" id="discogs-results" hidden></ul>
+      </section>
+    <% } %>
+
+    <form action="/albums/<%= album.id %>?_method=PUT" method="post" enctype="multipart/form-data" class="form" id="album-form">
       <label>
         <span>Title <em>*</em></span>
         <input type="text" name="title" required value="<%= album.title %>" />
@@ -45,6 +56,27 @@
         <textarea name="notes" rows="4"><%= album.notes || '' %></textarea>
       </label>
 
+      <div class="row">
+        <label>
+          <span>Purchase price <em class="muted">(KRW)</em></span>
+          <input type="text" inputmode="numeric" name="purchase_price" placeholder="e.g. 32000" value="<%= album.purchase_price || '' %>" />
+        </label>
+        <label>
+          <span>Purchase date</span>
+          <input type="date" name="purchase_date" value="<%= album.purchase_date || '' %>" />
+        </label>
+      </div>
+
+      <input type="hidden" name="cover_url" id="cover_url" value="" />
+      <input type="hidden" name="discogs_release_id" id="discogs_release_id" value="<%= album.discogs_release_id || '' %>" />
+      <div class="cover-preview" id="cover-preview" hidden>
+        <img id="cover-preview-img" alt="" />
+        <div>
+          <p class="muted small" style="margin:0">Cover from Discogs</p>
+          <button type="button" class="btn btn-ghost btn-tiny" id="cover-clear">Remove</button>
+        </div>
+      </div>
+
       <% if (album.cover_mime) { %>
         <div class="current-cover">
           <img src="/albums/<%= album.id %>/cover" alt="Current cover" />
@@ -68,5 +100,9 @@
   </main>
 
   <%- include('partials/footer') %>
+
+  <% if (discogsEnabled) { %>
+  <script src="/discogs-search.js" defer></script>
+  <% } %>
 </body>
 </html>
