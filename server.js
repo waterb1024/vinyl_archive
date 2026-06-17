@@ -63,6 +63,19 @@ app.get('/', async (req, res) => {
   res.render('index', { albums: result.rows, q });
 });
 
+// iTunes preview lookup
+app.get('/api/itunes/preview', async (req, res, next) => {
+  const artist = (req.query.artist || '').trim();
+  const title = (req.query.title || '').trim();
+  if (!artist || !title) return res.status(400).json({ error: 'artist and title required' });
+  try {
+    const data = await fetchItunesPreview(artist, title);
+    res.json({ preview: data });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Discogs search proxy
 app.get('/api/discogs/search', async (req, res, next) => {
   const q = (req.query.q || '').trim();
@@ -162,6 +175,32 @@ async function refreshPriceIfStale(album) {
     args: [album.id, usd, krw],
   });
   return { ...album, last_price_usd: usd, last_price_krw: krw, last_priced_at: new Date().toISOString() };
+}
+
+const itunesCache = new Map(); // key -> { value, expiresAt }
+async function fetchItunesPreview(artist, title) {
+  const key = `${artist}\n${title}`.toLowerCase();
+  const cached = itunesCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
+  const term = encodeURIComponent(`${artist} ${title}`.trim());
+  const url = `https://itunes.apple.com/search?term=${term}&entity=song&limit=1`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`iTunes ${res.status}`);
+    const data = await res.json();
+    const r = data?.results?.[0];
+    const value = r?.previewUrl ? {
+      preview_url: r.previewUrl,
+      track_name: r.trackName,
+      artist_name: r.artistName,
+      artwork: r.artworkUrl100,
+    } : null;
+    itunesCache.set(key, { value, expiresAt: Date.now() + 12 * 3600 * 1000 });
+    return value;
+  } catch (err) {
+    console.error('iTunes lookup failed:', err.message);
+    return null;
+  }
 }
 
 async function downloadCover(url) {

@@ -7,47 +7,97 @@
 <body>
   <%- include('partials/header') %>
 
-  <main class="container">
-    <section class="hero">
-      <p class="eyebrow">A Quiet Catalogue</p>
-      <h1 class="hero-title">Records,<br/><em>kept &amp; remembered.</em></h1>
-      <form class="search" action="/" method="get" role="search">
-        <input type="search" name="q" value="<%= q %>" placeholder="Search by title, artist, genre…" />
-        <button type="submit" aria-label="Search">↳</button>
-      </form>
+  <main class="home-layout container">
+    <section class="turntable-stage">
+      <div class="turntable" id="turntable">
+        <div class="plinth">
+          <div class="platter">
+            <div class="lp" id="lp" data-state="idle">
+              <div class="lp-grooves"></div>
+              <div class="lp-label">
+                <img id="lp-label-img" alt="" />
+              </div>
+              <div class="lp-spindle"></div>
+            </div>
+          </div>
+          <div class="tonearm" id="tonearm">
+            <div class="tonearm-base"></div>
+            <div class="tonearm-arm">
+              <div class="tonearm-head"></div>
+            </div>
+          </div>
+          <button type="button" class="tt-play" id="tt-play" aria-label="Play" disabled>
+            <span class="tt-play-icon" aria-hidden="true">▶</span>
+          </button>
+        </div>
+        <div class="now-playing" id="now-playing" data-state="idle">
+          <p class="np-eyebrow">Now playing</p>
+          <p class="np-title" id="np-title">Pick a record from the list.</p>
+          <p class="np-artist muted small" id="np-artist"></p>
+          <p class="np-source muted small" id="np-source"></p>
+        </div>
+      </div>
+      <audio id="tt-audio" preload="none"></audio>
     </section>
 
-    <% if (q) { %>
-      <p class="muted small">
-        <%= albums.length %> result<%= albums.length === 1 ? '' : 's' %> for "<%= q %>" ·
-        <a href="/">clear</a>
-      </p>
-    <% } %>
+    <button type="button" class="sheet-toggle" id="sheet-toggle" aria-controls="sheet" aria-expanded="false">
+      <span>Collection · <%= albums.length %></span>
+    </button>
 
-    <% if (albums.length === 0) { %>
-      <div class="empty">
-        <p>No records yet.</p>
-        <a href="/albums/new" class="btn">Add the first one</a>
-      </div>
-    <% } else { %>
-      <ul class="grid">
-        <% albums.forEach(a => { %>
-          <li class="card">
-            <a href="/albums/<%= a.id %>" class="card-link">
-              <div class="cover">
-                <img src="/albums/<%= a.id %>/cover" alt="" loading="lazy" />
-              </div>
-              <div class="meta">
-                <p class="title"><%= a.title %></p>
-                <p class="artist"><%= a.artist %><% if (a.year) { %> · <%= a.year %><% } %></p>
-              </div>
-            </a>
-          </li>
-        <% }) %>
-      </ul>
-    <% } %>
+    <aside class="sheet" id="sheet" aria-label="Collection">
+      <header class="sheet-head">
+        <h2 class="sheet-title">Collection <span class="sheet-count">(<%= albums.length %>)</span></h2>
+        <button type="button" class="sheet-close" id="sheet-close" aria-label="Close list">×</button>
+      </header>
+      <form class="sheet-search" action="/" method="get" role="search">
+        <input type="search" name="q" value="<%= q %>" placeholder="Search…" />
+        <button type="submit" aria-label="Search">↳</button>
+      </form>
+
+      <% if (q) { %>
+        <p class="muted small sheet-result-line">
+          <%= albums.length %> result<%= albums.length === 1 ? '' : 's' %> · <a href="/">clear</a>
+        </p>
+      <% } %>
+
+      <% if (albums.length === 0) { %>
+        <div class="sheet-empty">
+          <p class="muted">No records yet.</p>
+          <a href="/albums/new" class="btn">Add the first one</a>
+        </div>
+      <% } else { %>
+        <ul class="sheet-list">
+          <% albums.forEach(a => { %>
+            <li class="sheet-row"
+                data-id="<%= a.id %>"
+                data-title="<%= a.title %>"
+                data-artist="<%= a.artist %>"
+                data-cover="/albums/<%= a.id %>/cover">
+              <button type="button" class="sheet-play" aria-label="Play <%= a.title %>">
+                <img class="sheet-thumb" src="/albums/<%= a.id %>/cover" alt="" loading="lazy" />
+                <span class="sheet-play-icon" aria-hidden="true">▶</span>
+              </button>
+              <a class="sheet-link" href="/albums/<%= a.id %>" aria-label="View <%= a.title %>">
+                <div class="sheet-meta">
+                  <p class="sheet-row-title"><%= a.title %></p>
+                  <p class="sheet-row-sub muted small"><%= a.artist %><% if (a.year) { %> · <%= a.year %><% } %></p>
+                </div>
+                <span class="sheet-go" aria-hidden="true">›</span>
+              </a>
+            </li>
+          <% }) %>
+        </ul>
+      <% } %>
+
+      <footer class="sheet-foot">
+        <a href="/albums/new" class="btn btn-ghost btn-block">+ Add Record</a>
+      </footer>
+    </aside>
+
+    <div class="sheet-backdrop" id="sheet-backdrop" hidden></div>
   </main>
 
   <%- include('partials/footer') %>
+  <script src="/turntable.js" defer></script>
 </body>
 </html>
