@@ -101,8 +101,8 @@ a:hover { color: var(--brass); border-bottom-color: var(--brass-soft); }
   grid-template-columns: minmax(0, 1fr) 440px;
   gap: 56px;
   align-items: start;
-  padding-top: 48px;
-  padding-bottom: 80px;
+  padding-top: 32px;
+  padding-bottom: 56px;
 }
 
 /* Turntable */
@@ -117,7 +117,10 @@ a:hover { color: var(--brass); border-bottom-color: var(--brass-soft); }
   align-items: center;
   gap: 28px;
 }
-.plinth { width: 100%; max-width: 520px; }
+.plinth {
+  width: 100%;
+  max-width: min(520px, 86vw, calc(100dvh - 240px));
+}
 .plinth {
   position: relative;
   aspect-ratio: 1 / 1;
@@ -516,9 +519,12 @@ a:hover { color: var(--brass); border-bottom-color: var(--brass-soft); }
   }
 }
 @media (max-width: 720px) {
-  .plinth { max-width: 360px; }
-  .turntable-stage { padding: 16px 0; }
+  .home-layout { padding-top: 16px; padding-bottom: 24px; }
+  .turntable { gap: 18px; }
+  .turntable-stage { padding: 0; }
   .container { padding: 0 20px; }
+  .plinth { padding: 14px; }
+  .tt-play { width: 44px; height: 44px; bottom: 4%; }
 }
 
 /* Hero */
