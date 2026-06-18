@@ -18,6 +18,9 @@
       <div class="detail-info">
         <p class="eyebrow">
           <% if (album.year) { %><%= album.year %> · <% } %><%= album.genre || 'Unfiled' %>
+          <% if (album.status === 'wishlist') { %>
+            <span class="status-badge status-wishlist">Wishlist</span>
+          <% } %>
         </p>
         <h1 class="detail-title"><%= album.title %></h1>
         <p class="detail-artist"><%= album.artist %></p>
@@ -34,7 +37,45 @@
           <% } %>
         </dl>
 
-        <% if (album.purchase_price || album.last_price_krw) {
+        <% if (album.status === 'wishlist') { %>
+          <% const krwFmt = (n) => n == null ? null : '₩' + Number(n).toLocaleString('ko-KR'); %>
+          <% if (album.last_price_krw != null) { %>
+            <div class="price-block">
+              <h2>Market price</h2>
+              <div class="price-row">
+                <div class="price-cell">
+                  <span class="price-label">Market high <em class="muted">(Discogs)</em></span>
+                  <span class="price-value"><%= krwFmt(album.last_price_krw) %></span>
+                  <% if (album.last_price_usd) { %>
+                    <span class="price-sub muted small">$<%= Number(album.last_price_usd).toFixed(2) %></span>
+                  <% } %>
+                </div>
+              </div>
+              <% if (album.discogs_release_id) { %>
+                <div class="chart-section">
+                  <p class="eyebrow">Monthly highs</p>
+                  <div id="price-chart" data-album-id="<%= album.id %>"></div>
+                  <p class="chart-status muted small" id="price-chart-status">Loading…</p>
+                </div>
+              <% } %>
+            </div>
+          <% } %>
+          <form class="convert-block" action="/albums/<%= album.id %>/convert" method="post">
+            <h2>소장으로 옮기기</h2>
+            <p class="muted small">이 음반을 구매하셨다면 가격과 날짜를 기록해주세요.</p>
+            <div class="row">
+              <label>
+                <span>Purchase price <em class="muted">(KRW)</em></span>
+                <input type="text" inputmode="numeric" name="purchase_price" placeholder="e.g. 32000" required />
+              </label>
+              <label>
+                <span>Purchase date</span>
+                <input type="date" name="purchase_date" />
+              </label>
+            </div>
+            <button type="submit" class="btn btn-primary">소장으로 전환</button>
+          </form>
+        <% } else if (album.purchase_price || album.last_price_krw) {
              const krwFmt = (n) => n == null ? null : '₩' + Number(n).toLocaleString('ko-KR');
              const purchase = album.purchase_price ? Number(album.purchase_price) : null;
              const market = album.last_price_krw ? Number(album.last_price_krw) : null;

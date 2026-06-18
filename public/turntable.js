@@ -159,6 +159,40 @@
   if (sheetClose) sheetClose.addEventListener('click', () => openSheet(false));
   if (sheetBackdrop) sheetBackdrop.addEventListener('click', () => openSheet(false));
 
+  // Search toggle — expands inline over status tabs
+  const searchToggle = document.getElementById('search-toggle');
+  const searchForm = document.getElementById('sheet-search-form');
+  const searchClose = document.getElementById('search-close');
+  const searchRow = searchToggle?.closest('.sheet-status-row');
+  if (searchToggle && searchForm && searchRow) {
+    const setOpen = (open) => {
+      searchRow.dataset.searchOpen = open ? 'true' : 'false';
+      searchToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) {
+        const input = searchForm.querySelector('input[type="search"]');
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      }
+    };
+    searchToggle.addEventListener('click', () => setOpen(true));
+    if (searchClose) {
+      searchClose.addEventListener('click', () => {
+        const input = searchForm.querySelector('input[type="search"]');
+        if (input?.value) {
+          // Has a query: navigate to plain list to clear filter
+          window.location.href = '/';
+        } else {
+          setOpen(false);
+        }
+      });
+    }
+    searchForm.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    });
+  }
+
   // View toggle (list / grid)
   const viewToggle = document.getElementById('view-toggle');
   const sheetList = document.getElementById('sheet-list');

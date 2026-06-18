@@ -56,7 +56,19 @@
         <textarea name="notes" rows="4"><%= values.notes || '' %></textarea>
       </label>
 
-      <div class="row">
+      <fieldset class="status-fieldset">
+        <legend>Status</legend>
+        <label class="status-switch<%= (values.status || 'owned') === 'owned' ? ' active' : '' %>">
+          <input type="radio" name="status" value="owned" <%= (values.status || 'owned') === 'owned' ? 'checked' : '' %> />
+          <span>소장 중</span>
+        </label>
+        <label class="status-switch<%= values.status === 'wishlist' ? ' active' : '' %>">
+          <input type="radio" name="status" value="wishlist" <%= values.status === 'wishlist' ? 'checked' : '' %> />
+          <span>위시리스트</span>
+        </label>
+      </fieldset>
+
+      <div class="row purchase-fields" data-show-when="owned"<%= values.status === 'wishlist' ? ' hidden' : '' %>>
         <label>
           <span>Purchase price <em class="muted">(KRW)</em></span>
           <input type="text" inputmode="numeric" name="purchase_price" placeholder="e.g. 32000" value="<%= values.purchase_price || '' %>" />
@@ -94,5 +106,22 @@
   <% if (discogsEnabled) { %>
   <script src="/discogs-search.js" defer></script>
   <% } %>
+  <script>
+    (function () {
+      const radios = document.querySelectorAll('input[name="status"]');
+      const purchase = document.querySelector('.purchase-fields');
+      if (!radios.length || !purchase) return;
+      const apply = () => {
+        const selected = document.querySelector('input[name="status"]:checked')?.value || 'owned';
+        purchase.hidden = selected !== 'owned';
+        document.querySelectorAll('.status-switch').forEach((el) => {
+          const v = el.querySelector('input')?.value;
+          el.classList.toggle('active', v === selected);
+        });
+      };
+      radios.forEach((r) => r.addEventListener('change', apply));
+      apply();
+    })();
+  </script>
 </body>
 </html>
