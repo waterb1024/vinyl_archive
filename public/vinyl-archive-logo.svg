@@ -12,19 +12,19 @@
   <!-- Wordmark: VINYL ARCHIVE -->
   <text
     x="54"
-    y="30"
+    y="32"
     font-family="'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif"
-    font-size="22"
+    font-size="26"
     font-weight="600"
     letter-spacing="3"
     fill="#111"
   >VINYL</text>
 
   <text
-    x="138"
-    y="30"
+    x="153"
+    y="32"
     font-family="'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif"
-    font-size="22"
+    font-size="26"
     font-weight="300"
     letter-spacing="3"
     fill="#111"

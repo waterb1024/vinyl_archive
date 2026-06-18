@@ -100,7 +100,11 @@
       <section class="stats-section">
         <h2 class="stats-section-title">Most valuable</h2>
         <ol class="rank-list">
-          <% sortedByValue.forEach((a, i) => { %>
+          <% sortedByValue.forEach((a, i) => {
+               const purchase = a.purchase_price ? Number(a.purchase_price) : null;
+               const market = Number(a.last_price_krw);
+               const roiPct = (purchase && purchase > 0) ? ((market - purchase) / purchase) * 100 : null;
+          %>
             <li class="rank-row">
               <span class="rank-index"><%= String(i + 1).padStart(2, '0') %></span>
               <a href="/albums/<%= a.id %>" class="rank-thumb">
@@ -110,33 +114,34 @@
                 <p class="rank-title"><%= a.title %></p>
                 <p class="rank-sub muted small"><%= a.artist %><% if (a.year) { %> · <%= a.year %><% } %></p>
               </a>
-              <span class="rank-value"><%= krw(a.last_price_krw) %></span>
+              <div class="rank-figures">
+                <span class="rank-value"><%= krw(a.last_price_krw) %></span>
+                <% if (roiPct != null) { %>
+                  <span class="rank-roi <%= roiPct >= 0 ? 'stat-up' : 'stat-down' %>">
+                    <%= roiPct >= 0 ? '+' : '' %><%= roiPct.toFixed(1) %>%
+                  </span>
+                <% } %>
+              </div>
             </li>
           <% }) %>
         </ol>
       </section>
     <% } %>
 
-    <% if (sortedByRoi.length) { %>
+    <% if (topArtists.length) { %>
       <section class="stats-section">
-        <h2 class="stats-section-title">Top ROI</h2>
-        <ol class="rank-list">
-          <% sortedByRoi.forEach((a, i) => { %>
-            <li class="rank-row">
-              <span class="rank-index"><%= String(i + 1).padStart(2, '0') %></span>
-              <a href="/albums/<%= a.id %>" class="rank-thumb">
-                <img src="/albums/<%= a.id %>/cover?v=<%= a.cover_version || 1 %>" alt="" loading="lazy" />
-              </a>
-              <a href="/albums/<%= a.id %>" class="rank-meta">
-                <p class="rank-title"><%= a.title %></p>
-                <p class="rank-sub muted small"><%= a.artist %><% if (a.year) { %> · <%= a.year %><% } %></p>
-              </a>
-              <span class="rank-value <%= a.roiPct >= 0 ? 'stat-up' : 'stat-down' %>">
-                <%= a.roiPct >= 0 ? '+' : '' %><%= a.roiPct.toFixed(1) %>%
+        <h2 class="stats-section-title">Top artists</h2>
+        <ul class="bar-list">
+          <% topArtists.forEach(([name, count]) => { %>
+            <li class="bar-row">
+              <span class="bar-name"><%= name %></span>
+              <span class="bar-track">
+                <span class="bar-fill" style="width: <%= maxArtist ? (count / maxArtist * 100) : 0 %>%"></span>
               </span>
+              <span class="bar-count"><%= count %></span>
             </li>
           <% }) %>
-        </ol>
+        </ul>
       </section>
     <% } %>
 

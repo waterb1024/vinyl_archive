@@ -1330,6 +1330,17 @@ a:hover { color: var(--brass); border-bottom-color: var(--brass-soft); }
   font-feature-settings: 'tnum';
   white-space: nowrap;
 }
+.rank-figures {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.rank-roi {
+  font-size: 12px;
+  font-feature-settings: 'tnum';
+  white-space: nowrap;
+}
 
 /* Responsive */
 @media (max-width: 720px) {

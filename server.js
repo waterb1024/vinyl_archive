@@ -290,6 +290,7 @@ app.get('/stats', async (req, res, next) => {
     let pairedMarket = 0;
     const genreCounts = new Map();
     const decadeCounts = new Map();
+    const artistCounts = new Map();
     for (const a of albums) {
       const p = a.purchase_price ? Number(a.purchase_price) : null;
       const m = a.last_price_krw ? Number(a.last_price_krw) : null;
@@ -298,6 +299,8 @@ app.get('/stats', async (req, res, next) => {
       if (p != null && m != null) { pairedPurchase += p; pairedMarket += m; }
       const genre = (a.genre || '').trim() || 'Unfiled';
       genreCounts.set(genre, (genreCounts.get(genre) || 0) + 1);
+      const artist = (a.artist || '').trim() || 'Unknown';
+      artistCounts.set(artist, (artistCounts.get(artist) || 0) + 1);
       if (a.year) {
         const decade = Math.floor(Number(a.year) / 10) * 10;
         if (decade) {
@@ -325,8 +328,12 @@ app.get('/stats', async (req, res, next) => {
       .sort((a, b) => b[1] - a[1]);
     const decades = [...decadeCounts.entries()]
       .sort((a, b) => a[0] - b[0]);
+    const topArtists = [...artistCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8);
     const maxGenre = genres.reduce((m, [, c]) => Math.max(m, c), 0);
     const maxDecade = decades.reduce((m, [, c]) => Math.max(m, c), 0);
+    const maxArtist = topArtists.reduce((m, [, c]) => Math.max(m, c), 0);
     res.render('stats', {
       total,
       purchaseSum,
@@ -340,8 +347,10 @@ app.get('/stats', async (req, res, next) => {
       sortedByRoi,
       genres,
       decades,
+      topArtists,
       maxGenre,
       maxDecade,
+      maxArtist,
     });
   } catch (err) {
     next(err);
