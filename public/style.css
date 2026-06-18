@@ -1303,7 +1303,7 @@ a:hover { color: var(--brass); border-bottom-color: var(--brass-soft); }
 }
 
 /* Stats dashboard */
-.stats { padding-bottom: 80px; max-width: 880px; }
+.stats { padding-bottom: 80px; }
 .stats-head { margin: 12px 0 32px; }
 .stats-title {
   font-family: var(--serif);
