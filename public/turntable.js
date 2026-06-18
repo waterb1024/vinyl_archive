@@ -159,6 +159,29 @@
   if (sheetClose) sheetClose.addEventListener('click', () => openSheet(false));
   if (sheetBackdrop) sheetBackdrop.addEventListener('click', () => openSheet(false));
 
+  // View toggle (list / grid)
+  const viewToggle = document.getElementById('view-toggle');
+  const sheetList = document.getElementById('sheet-list');
+  if (viewToggle && sheetList) {
+    const stored = localStorage.getItem('vinyl-archive:view');
+    const initial = stored === 'grid' ? 'grid' : 'list';
+    const applyView = (mode) => {
+      sheetList.classList.toggle('view-grid', mode === 'grid');
+      viewToggle.dataset.current = mode;
+      viewToggle.setAttribute(
+        'aria-label',
+        mode === 'grid' ? 'Switch to list view' : 'Switch to grid view'
+      );
+      viewToggle.setAttribute('aria-pressed', mode === 'grid' ? 'true' : 'false');
+    };
+    applyView(initial);
+    viewToggle.addEventListener('click', () => {
+      const next = viewToggle.dataset.current === 'grid' ? 'list' : 'grid';
+      applyView(next);
+      localStorage.setItem('vinyl-archive:view', next);
+    });
+  }
+
   playBtn.addEventListener('click', () => {
     if (!current) return;
     if (audio.paused) audio.play().catch(() => {});

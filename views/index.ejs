@@ -47,12 +47,32 @@
     <aside class="sheet" id="sheet" aria-label="Collection">
       <header class="sheet-head">
         <h2 class="sheet-title">Collection <span class="sheet-count">(<%= albums.length %>)</span></h2>
-        <button type="button" class="sheet-close" id="sheet-close" aria-label="Close list">×</button>
+        <div class="sheet-head-actions">
+          <button type="button" class="view-toggle" id="view-toggle" data-current="list" aria-label="Switch to grid view" aria-pressed="false">
+            <svg class="view-toggle-icon" data-view="list" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+              <rect x="2" y="3.5" width="16" height="2" rx="0.5" />
+              <rect x="2" y="9" width="16" height="2" rx="0.5" />
+              <rect x="2" y="14.5" width="16" height="2" rx="0.5" />
+            </svg>
+            <svg class="view-toggle-icon" data-view="grid" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+              <rect x="2" y="2" width="7" height="7" rx="0.5" />
+              <rect x="11" y="2" width="7" height="7" rx="0.5" />
+              <rect x="2" y="11" width="7" height="7" rx="0.5" />
+              <rect x="11" y="11" width="7" height="7" rx="0.5" />
+            </svg>
+          </button>
+          <button type="button" class="sheet-close" id="sheet-close" aria-label="Close list">×</button>
+        </div>
       </header>
       <form class="sheet-search" action="/" method="get" role="search">
         <input type="search" name="q" value="<%= q %>" placeholder="Search…" />
         <input type="hidden" name="sort" value="<%= sort %>" />
-        <button type="submit" aria-label="Search">↳</button>
+        <button type="submit" class="sheet-search-btn" aria-label="Search">
+          <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <circle cx="8.5" cy="8.5" r="5.5" />
+            <line x1="12.7" y1="12.7" x2="17" y2="17" />
+          </svg>
+        </button>
       </form>
       <nav class="sheet-sort" aria-label="Sort">
         <% const sortOptions = [
@@ -83,7 +103,7 @@
           <a href="/albums/new" class="btn">Add the first one</a>
         </div>
       <% } else { %>
-        <ul class="sheet-list">
+        <ul class="sheet-list" id="sheet-list">
           <% albums.forEach(a => { %>
             <li class="sheet-row"
                 data-id="<%= a.id %>"

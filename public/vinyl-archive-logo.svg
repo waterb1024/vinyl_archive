@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 48" fill="none">
+  <!-- LP Record icon -->
+  <g transform="translate(24, 24)">
+    <circle cx="0" cy="0" r="20" fill="#111"/>
+    <circle cx="0" cy="0" r="17" fill="none" stroke="#333" stroke-width="0.8"/>
+    <circle cx="0" cy="0" r="14" fill="none" stroke="#333" stroke-width="0.8"/>
+    <circle cx="0" cy="0" r="11" fill="none" stroke="#333" stroke-width="0.8"/>
+    <circle cx="0" cy="0" r="7" fill="#111" stroke="#333" stroke-width="0.6"/>
+    <circle cx="0" cy="0" r="2.2" fill="#111" stroke="#555" stroke-width="0.8"/>
+  </g>
+
+  <!-- Wordmark: VINYL ARCHIVE -->
+  <text
+    x="54"
+    y="30"
+    font-family="'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    font-size="22"
+    font-weight="600"
+    letter-spacing="3"
+    fill="#111"
+  >VINYL</text>
+
+  <text
+    x="138"
+    y="30"
+    font-family="'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    font-size="22"
+    font-weight="300"
+    letter-spacing="3"
+    fill="#111"
+  >ARCHIVE</text>
+</svg>
