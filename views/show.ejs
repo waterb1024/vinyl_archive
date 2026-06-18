@@ -39,18 +39,31 @@
 
         <% if (album.status === 'wishlist') { %>
           <% const krwFmt = (n) => n == null ? null : '₩' + Number(n).toLocaleString('ko-KR'); %>
-          <% if (album.last_price_krw != null) { %>
+          <% const target = album.target_price_krw ? Number(album.target_price_krw) : null; %>
+          <% const market = album.last_price_krw != null ? Number(album.last_price_krw) : null; %>
+          <% const hitTarget = target != null && market != null && market <= target; %>
+          <% if (market != null) { %>
             <div class="price-block">
               <h2>Market price</h2>
               <div class="price-row">
                 <div class="price-cell">
                   <span class="price-label">Market high <em class="muted">(Discogs)</em></span>
-                  <span class="price-value"><%= krwFmt(album.last_price_krw) %></span>
+                  <span class="price-value"><%= krwFmt(market) %></span>
                   <% if (album.last_price_usd) { %>
                     <span class="price-sub muted small">$<%= Number(album.last_price_usd).toFixed(2) %></span>
                   <% } %>
                 </div>
               </div>
+              <% if (target != null) { %>
+                <% if (hitTarget) { %>
+                  <p class="target-alert">🎯 원하시던 <%= krwFmt(target) %>에 도달했어요. 지금이 살 타이밍!</p>
+                <% } else {
+                     const diff = market - target;
+                     const dropPct = market > 0 ? (diff / market) * 100 : 0;
+                %>
+                  <p class="target-alert target-pending">아직 원하시는 <strong><%= krwFmt(target) %></strong>에 도달하려면 <strong><%= krwFmt(diff) %>(<%= dropPct.toFixed(1) %>%)</strong>만큼 남았어요.</p>
+                <% } %>
+              <% } %>
               <% if (album.discogs_release_id) { %>
                 <div class="chart-section">
                   <p class="eyebrow">Monthly highs</p>
@@ -58,6 +71,12 @@
                   <p class="chart-status muted small" id="price-chart-status">Loading…</p>
                 </div>
               <% } %>
+            </div>
+          <% } else if (target != null) { %>
+            <div class="price-block">
+              <h2>Target set</h2>
+              <p class="price-value"><%= krwFmt(target) %></p>
+              <p class="muted small">시세가 수집되면 목표가 도달 여부를 알려드릴게요.</p>
             </div>
           <% } %>
           <form class="convert-block" action="/albums/<%= album.id %>/convert" method="post">

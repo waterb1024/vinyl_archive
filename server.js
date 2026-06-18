@@ -64,7 +64,7 @@ app.get('/', async (req, res) => {
   }[sort];
 
   const columns = `id, title, artist, year, genre, cover_version,
-                   purchase_price, last_price_krw, status`;
+                   purchase_price, last_price_krw, status, target_price_krw`;
   let result;
   if (q) {
     const like = `%${q}%`;
@@ -89,7 +89,15 @@ app.get('/', async (req, res) => {
   for (const row of counts.rows) {
     countsByStatus[row.status] = Number(row.n);
   }
-  res.render('index', { albums: result.rows, q, sort, status, countsByStatus });
+  const hitRow = await db.execute(
+    `SELECT COUNT(*) AS n FROM albums
+      WHERE status = 'wishlist'
+        AND target_price_krw IS NOT NULL
+        AND last_price_krw IS NOT NULL
+        AND last_price_krw <= target_price_krw`
+  );
+  const wishlistHitCount = Number(hitRow.rows[0]?.n || 0);
+  res.render('index', { albums: result.rows, q, sort, status, countsByStatus, wishlistHitCount });
 });
 
 // Manual batch refresh trigger (for external cron / GitHub Actions)
@@ -383,8 +391,11 @@ app.get('/albums/new', (req, res) => {
 
 // Create
 app.post('/albums', upload.single('cover'), async (req, res) => {
-  const { title, artist, year, genre, label, notes, cover_url, purchase_price, purchase_date, discogs_release_id } = req.body;
+  const { title, artist, year, genre, label, notes, cover_url, purchase_price, purchase_date, discogs_release_id, target_price } = req.body;
   const status = req.body.status === 'wishlist' ? 'wishlist' : 'owned';
+  const targetPriceKrw = status === 'wishlist' && target_price
+    ? Number(String(target_price).replace(/[^\d]/g, ''))
+    : null;
   const errors = [];
   if (!title?.trim()) errors.push('Title is required.');
   if (!artist?.trim()) errors.push('Artist is required.');
@@ -403,8 +414,8 @@ app.post('/albums', upload.single('cover'), async (req, res) => {
   }
 
   const result = await db.execute({
-    sql: `INSERT INTO albums (title, artist, year, genre, label, notes, cover, cover_mime, purchase_price, purchase_date, discogs_release_id, status)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    sql: `INSERT INTO albums (title, artist, year, genre, label, notes, cover, cover_mime, purchase_price, purchase_date, discogs_release_id, status, target_price_krw)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     args: [
       title.trim(),
       artist.trim(),
@@ -420,6 +431,7 @@ app.post('/albums', upload.single('cover'), async (req, res) => {
       status === 'owned' ? (purchase_date?.trim() || null) : null,
       discogs_release_id ? Number(discogs_release_id) : null,
       status,
+      targetPriceKrw,
     ],
   });
 
@@ -437,7 +449,8 @@ app.post('/albums/:id/convert', async (req, res, next) => {
       sql: `UPDATE albums
             SET status = 'owned',
                 purchase_price = ?,
-                purchase_date = ?
+                purchase_date = ?,
+                target_price_krw = NULL
             WHERE id = ?`,
       args: [price, purchase_date?.trim() || null, req.params.id],
     });
@@ -452,7 +465,7 @@ app.get('/albums/:id', async (req, res) => {
   const result = await db.execute({
     sql: `SELECT id, title, artist, year, genre, label, notes, cover_mime, created_at,
                  purchase_price, purchase_date, discogs_release_id,
-                 last_price_usd, last_price_krw, last_priced_at, cover_version, status
+                 last_price_usd, last_price_krw, last_priced_at, cover_version, status, target_price_krw
           FROM albums WHERE id = ?`,
     args: [req.params.id],
   });
@@ -505,7 +518,7 @@ app.get('/albums/:id/cover', async (req, res) => {
 app.get('/albums/:id/edit', async (req, res) => {
   const result = await db.execute({
     sql: `SELECT id, title, artist, year, genre, label, notes, cover_mime,
-                 purchase_price, purchase_date, discogs_release_id, cover_version, status
+                 purchase_price, purchase_date, discogs_release_id, cover_version, status, target_price_krw
           FROM albums WHERE id = ?`,
     args: [req.params.id],
   });
@@ -517,9 +530,12 @@ app.get('/albums/:id/edit', async (req, res) => {
 app.put('/albums/:id', upload.single('cover'), async (req, res) => {
   const {
     title, artist, year, genre, label, notes, remove_cover,
-    purchase_price, purchase_date, discogs_release_id, cover_url,
+    purchase_price, purchase_date, discogs_release_id, cover_url, target_price,
   } = req.body;
   const status = req.body.status === 'wishlist' ? 'wishlist' : 'owned';
+  const targetPriceKrw = status === 'wishlist' && target_price
+    ? Number(String(target_price).replace(/[^\d]/g, ''))
+    : null;
   const errors = [];
   if (!title?.trim()) errors.push('Title is required.');
   if (!artist?.trim()) errors.push('Artist is required.');
@@ -552,6 +568,7 @@ app.put('/albums/:id', upload.single('cover'), async (req, res) => {
     status === 'owned' ? (purchase_date?.trim() || null) : null,
     newReleaseId,
     status,
+    targetPriceKrw,
   ];
 
   // Cover handling: new upload > Discogs cover_url (if provided) > remove_cover flag > keep existing
@@ -574,7 +591,7 @@ app.put('/albums/:id', upload.single('cover'), async (req, res) => {
   }
 
   const setBase = `title=?, artist=?, year=?, genre=?, label=?, notes=?,
-                   purchase_price=?, purchase_date=?, discogs_release_id=?, status=?`;
+                   purchase_price=?, purchase_date=?, discogs_release_id=?, status=?, target_price_krw=?`;
   const setPrice = releaseChanged
     ? `, last_price_usd=NULL, last_price_krw=NULL, last_priced_at=NULL`
     : '';

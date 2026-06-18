@@ -79,9 +79,10 @@
                if (sort !== 'recent') params.set('sort', sort);
                if (o.key !== 'owned') params.set('status', o.key);
                const href = '/' + (params.toString() ? '?' + params.toString() : '');
+               const showAlert = o.key === 'wishlist' && wishlistHitCount > 0;
           %>
             <a href="<%= href %>" class="sheet-status-btn<%= status === o.key ? ' active' : '' %>">
-              <%= o.label %><span class="sheet-status-count"><%= o.count %></span>
+              <%= o.label %><span class="sheet-status-count"><%= o.count %></span><% if (showAlert) { %><span class="sheet-status-alert" title="목표가 도달 <%= wishlistHitCount %>건">●</span><% } %>
             </a>
           <% }) %>
         </nav>
@@ -133,8 +134,11 @@
         </div>
       <% } else { %>
         <ul class="sheet-list" id="sheet-list">
-          <% albums.forEach(a => { %>
-            <li class="sheet-row"
+          <% albums.forEach(a => {
+               const hitTarget = a.status === 'wishlist' && a.target_price_krw != null && a.last_price_krw != null
+                 && Number(a.last_price_krw) <= Number(a.target_price_krw);
+          %>
+            <li class="sheet-row<%= hitTarget ? ' target-hit' : '' %>"
                 data-id="<%= a.id %>"
                 data-title="<%= a.title %>"
                 data-artist="<%= a.artist %>"
@@ -145,7 +149,9 @@
               </button>
               <a class="sheet-link" href="/albums/<%= a.id %>" aria-label="View <%= a.title %>">
                 <div class="sheet-meta">
-                  <p class="sheet-row-title"><%= a.title %></p>
+                  <p class="sheet-row-title">
+                    <%= a.title %><% if (hitTarget) { %><span class="target-dot" aria-label="목표가 도달">🎯</span><% } %>
+                  </p>
                   <p class="sheet-row-sub muted small"><%= a.artist %><% if (a.year) { %> · <%= a.year %><% } %></p>
                 </div>
                 <span class="sheet-go" aria-hidden="true">›</span>

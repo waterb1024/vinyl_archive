@@ -7,7 +7,7 @@
 <body>
   <%- include('partials/header') %>
 
-  <main class="container narrow">
+  <main class="container">
     <p class="muted small back"><a href="/">← Back</a></p>
     <h1 class="form-title">Add a Record</h1>
 
@@ -58,11 +58,11 @@
 
       <fieldset class="status-fieldset">
         <legend>Status</legend>
-        <label class="status-switch<%= (values.status || 'owned') === 'owned' ? ' active' : '' %>">
+        <label class="status-radio">
           <input type="radio" name="status" value="owned" <%= (values.status || 'owned') === 'owned' ? 'checked' : '' %> />
           <span>소장 중</span>
         </label>
-        <label class="status-switch<%= values.status === 'wishlist' ? ' active' : '' %>">
+        <label class="status-radio">
           <input type="radio" name="status" value="wishlist" <%= values.status === 'wishlist' ? 'checked' : '' %> />
           <span>위시리스트</span>
         </label>
@@ -76,6 +76,13 @@
         <label>
           <span>Purchase date</span>
           <input type="date" name="purchase_date" value="<%= values.purchase_date || '' %>" />
+        </label>
+      </div>
+
+      <div class="wishlist-fields" data-show-when="wishlist"<%= values.status === 'wishlist' ? '' : ' hidden' %>>
+        <label>
+          <span>Target price <em class="muted">(KRW · 시세가 이 이하로 떨어지면 알림)</em></span>
+          <input type="text" inputmode="numeric" name="target_price" placeholder="e.g. 25000" value="<%= values.target_price || '' %>" />
         </label>
       </div>
 
@@ -109,14 +116,12 @@
   <script>
     (function () {
       const radios = document.querySelectorAll('input[name="status"]');
-      const purchase = document.querySelector('.purchase-fields');
-      if (!radios.length || !purchase) return;
+      if (!radios.length) return;
+      const sections = document.querySelectorAll('[data-show-when]');
       const apply = () => {
         const selected = document.querySelector('input[name="status"]:checked')?.value || 'owned';
-        purchase.hidden = selected !== 'owned';
-        document.querySelectorAll('.status-switch').forEach((el) => {
-          const v = el.querySelector('input')?.value;
-          el.classList.toggle('active', v === selected);
+        sections.forEach((el) => {
+          el.hidden = el.dataset.showWhen !== selected;
         });
       };
       radios.forEach((r) => r.addEventListener('change', apply));
