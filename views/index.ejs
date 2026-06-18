@@ -106,7 +106,7 @@
         <% const sortOptions = [
           { key: 'recent', label: '최신순' },
           { key: 'alpha', label: '가나다순' },
-          { key: 'roi', label: '수익률순' },
+          ...(status === 'wishlist' ? [] : [{ key: 'roi', label: '수익률순' }]),
           { key: 'price', label: '시세순' },
         ]; %>
         <% sortOptions.forEach(o => {

@@ -48,9 +48,10 @@ app.get('/', async (req, res) => {
   maybeTriggerBatchRefresh();
   const q = (req.query.q || '').trim();
   const status = req.query.status === 'wishlist' ? 'wishlist' : 'owned';
-  const sort = ['recent', 'alpha', 'roi', 'price'].includes(req.query.sort)
-    ? req.query.sort
-    : 'recent';
+  const allowedSorts = status === 'wishlist'
+    ? ['recent', 'alpha', 'price']
+    : ['recent', 'alpha', 'roi', 'price'];
+  const sort = allowedSorts.includes(req.query.sort) ? req.query.sort : 'recent';
   const orderBy = {
     recent: `created_at DESC`,
     alpha: `title COLLATE NOCASE ASC`,
