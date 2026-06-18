@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <% const pageTitle = 'Stats'; %>
+  <%- include('partials/head', { pageTitle }) %>
+</head>
+<body>
+  <%- include('partials/header') %>
+
+  <main class="container stats">
+    <p class="muted small back"><a href="/">← Back to Collection</a></p>
+
+    <header class="stats-head">
+      <p class="eyebrow">Dashboard</p>
+      <h1 class="stats-title">Collection at a glance</h1>
+    </header>
+
+    <% const krw = (n) => n == null ? '—' : '₩' + Math.round(Number(n)).toLocaleString('ko-KR'); %>
+    <% const num = (n) => n == null ? '—' : Number(n).toLocaleString('ko-KR'); %>
+
+    <section class="stats-grid">
+      <div class="stat-card">
+        <p class="stat-label">Records</p>
+        <p class="stat-value"><%= num(total) %></p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Total purchased</p>
+        <p class="stat-value"><%= krw(purchaseSum) %></p>
+        <p class="stat-sub muted small">across <%= purchaseTrackedCount %> tracked</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Current market</p>
+        <p class="stat-value"><%= krw(marketSum) %></p>
+        <p class="stat-sub muted small">across <%= marketTrackedCount %> tracked</p>
+      </div>
+      <div class="stat-card">
+        <p class="stat-label">Net ROI</p>
+        <p class="stat-value <%= roiPct != null && roiPct >= 0 ? 'stat-up' : roiPct != null ? 'stat-down' : '' %>">
+          <% if (roiPct == null) { %>—<% } else { %>
+            <%= roiPct >= 0 ? '+' : '' %><%= roiPct.toFixed(1) %>%
+          <% } %>
+        </p>
+        <% if (roiPct != null) { %>
+          <p class="stat-sub muted small">
+            <%= krw(pairedMarket - pairedPurchase) %> on <%= krw(pairedPurchase) %>
+          </p>
+        <% } %>
+      </div>
+    </section>
+
+    <% if (genres.length) { %>
+      <%
+        const genreTotal = genres.reduce((s, [, c]) => s + c, 0);
+        const palette = ['#8a6a3b', '#b89765', '#6f5430', '#c4a574', '#4a4540', '#a8804a', '#8a847b', '#d4b889', '#5a4a3a', '#e6c896'];
+        const radius = 70;
+        const circumference = 2 * Math.PI * radius;
+        let acc = 0;
+      %>
+      <section class="stats-section">
+        <h2 class="stats-section-title">By genre</h2>
+        <div class="donut-wrap">
+          <svg class="donut-chart" viewBox="0 0 200 200" role="img" aria-label="Genre breakdown">
+            <circle cx="100" cy="100" r="<%= radius %>" fill="none" stroke="var(--bg-deep)" stroke-width="28" />
+            <g transform="rotate(-90 100 100)">
+              <% genres.forEach(([name, count], i) => {
+                   const frac = count / genreTotal;
+                   const sliceLen = frac * circumference;
+                   const offset = -acc * circumference;
+                   acc += frac;
+              %>
+                <circle cx="100" cy="100" r="<%= radius %>"
+                        fill="none"
+                        stroke="<%= palette[i % palette.length] %>"
+                        stroke-width="28"
+                        stroke-dasharray="<%= sliceLen.toFixed(3) %> <%= (circumference - sliceLen).toFixed(3) %>"
+                        stroke-dashoffset="<%= offset.toFixed(3) %>">
+                  <title><%= name %> · <%= count %></title>
+                </circle>
+              <% }) %>
+            </g>
+            <text x="100" y="96" text-anchor="middle" class="donut-num"><%= genreTotal %></text>
+            <text x="100" y="116" text-anchor="middle" class="donut-label">records</text>
+          </svg>
+          <ul class="donut-legend">
+            <% genres.forEach(([name, count], i) => {
+                 const pct = (count / genreTotal * 100).toFixed(0);
+            %>
+              <li>
+                <span class="donut-swatch" style="background: <%= palette[i % palette.length] %>"></span>
+                <span class="donut-legend-name"><%= name %></span>
+                <span class="donut-legend-count"><%= count %><span class="muted donut-legend-pct"> · <%= pct %>%</span></span>
+              </li>
+            <% }) %>
+          </ul>
+        </div>
+      </section>
+    <% } %>
+
+    <% if (sortedByValue.length) { %>
+      <section class="stats-section">
+        <h2 class="stats-section-title">Most valuable</h2>
+        <ol class="rank-list">
+          <% sortedByValue.forEach((a, i) => { %>
+            <li class="rank-row">
+              <span class="rank-index"><%= String(i + 1).padStart(2, '0') %></span>
+              <a href="/albums/<%= a.id %>" class="rank-thumb">
+                <img src="/albums/<%= a.id %>/cover?v=<%= a.cover_version || 1 %>" alt="" loading="lazy" />
+              </a>
+              <a href="/albums/<%= a.id %>" class="rank-meta">
+                <p class="rank-title"><%= a.title %></p>
+                <p class="rank-sub muted small"><%= a.artist %><% if (a.year) { %> · <%= a.year %><% } %></p>
+              </a>
+              <span class="rank-value"><%= krw(a.last_price_krw) %></span>
+            </li>
+          <% }) %>
+        </ol>
+      </section>
+    <% } %>
+
+    <% if (sortedByRoi.length) { %>
+      <section class="stats-section">
+        <h2 class="stats-section-title">Top ROI</h2>
+        <ol class="rank-list">
+          <% sortedByRoi.forEach((a, i) => { %>
+            <li class="rank-row">
+              <span class="rank-index"><%= String(i + 1).padStart(2, '0') %></span>
+              <a href="/albums/<%= a.id %>" class="rank-thumb">
+                <img src="/albums/<%= a.id %>/cover?v=<%= a.cover_version || 1 %>" alt="" loading="lazy" />
+              </a>
+              <a href="/albums/<%= a.id %>" class="rank-meta">
+                <p class="rank-title"><%= a.title %></p>
+                <p class="rank-sub muted small"><%= a.artist %><% if (a.year) { %> · <%= a.year %><% } %></p>
+              </a>
+              <span class="rank-value <%= a.roiPct >= 0 ? 'stat-up' : 'stat-down' %>">
+                <%= a.roiPct >= 0 ? '+' : '' %><%= a.roiPct.toFixed(1) %>%
+              </span>
+            </li>
+          <% }) %>
+        </ol>
+      </section>
+    <% } %>
+
+    <% if (!total) { %>
+      <p class="muted">Nothing to show yet — add a record to start tracking.</p>
+    <% } %>
+  </main>
+
+  <%- include('partials/footer') %>
+</body>
+</html>

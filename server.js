@@ -272,6 +272,82 @@ async function downloadCover(url) {
   return { buffer: buf, mime };
 }
 
+// Stats dashboard
+app.get('/stats', async (req, res, next) => {
+  try {
+    const result = await db.execute(
+      `SELECT id, title, artist, year, genre, cover_version,
+              purchase_price, last_price_krw
+         FROM albums`
+    );
+    const albums = result.rows;
+    const total = albums.length;
+    let purchaseSum = 0;
+    let purchaseTrackedCount = 0;
+    let marketSum = 0;
+    let marketTrackedCount = 0;
+    let pairedPurchase = 0;
+    let pairedMarket = 0;
+    const genreCounts = new Map();
+    const decadeCounts = new Map();
+    for (const a of albums) {
+      const p = a.purchase_price ? Number(a.purchase_price) : null;
+      const m = a.last_price_krw ? Number(a.last_price_krw) : null;
+      if (p != null) { purchaseSum += p; purchaseTrackedCount++; }
+      if (m != null) { marketSum += m; marketTrackedCount++; }
+      if (p != null && m != null) { pairedPurchase += p; pairedMarket += m; }
+      const genre = (a.genre || '').trim() || 'Unfiled';
+      genreCounts.set(genre, (genreCounts.get(genre) || 0) + 1);
+      if (a.year) {
+        const decade = Math.floor(Number(a.year) / 10) * 10;
+        if (decade) {
+          decadeCounts.set(decade, (decadeCounts.get(decade) || 0) + 1);
+        }
+      }
+    }
+    const roiPct = pairedPurchase > 0
+      ? ((pairedMarket - pairedPurchase) / pairedPurchase) * 100
+      : null;
+    const sortedByValue = albums
+      .filter((a) => a.last_price_krw != null)
+      .sort((a, b) => Number(b.last_price_krw) - Number(a.last_price_krw))
+      .slice(0, 5);
+    const sortedByRoi = albums
+      .filter((a) => a.purchase_price && a.last_price_krw)
+      .map((a) => ({
+        ...a,
+        roiPct: ((Number(a.last_price_krw) - Number(a.purchase_price))
+                / Number(a.purchase_price)) * 100,
+      }))
+      .sort((a, b) => b.roiPct - a.roiPct)
+      .slice(0, 5);
+    const genres = [...genreCounts.entries()]
+      .sort((a, b) => b[1] - a[1]);
+    const decades = [...decadeCounts.entries()]
+      .sort((a, b) => a[0] - b[0]);
+    const maxGenre = genres.reduce((m, [, c]) => Math.max(m, c), 0);
+    const maxDecade = decades.reduce((m, [, c]) => Math.max(m, c), 0);
+    res.render('stats', {
+      total,
+      purchaseSum,
+      purchaseTrackedCount,
+      marketSum,
+      marketTrackedCount,
+      pairedPurchase,
+      pairedMarket,
+      roiPct,
+      sortedByValue,
+      sortedByRoi,
+      genres,
+      decades,
+      maxGenre,
+      maxDecade,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // New form
 app.get('/albums/new', (req, res) => {
   res.render('new', { errors: [], values: {}, discogsEnabled: !!DISCOGS_TOKEN });
