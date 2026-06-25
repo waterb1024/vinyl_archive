@@ -9,7 +9,43 @@ if (!url) {
   process.exit(1);
 }
 
-export const db = createClient({ url, authToken });
+const rawClient = createClient({ url, authToken });
+
+function isTransient(err) {
+  const status = err?.cause?.status ?? err?.status;
+  if (status === 502 || status === 503 || status === 504) return true;
+  const code = err?.code || '';
+  return code === 'ECONNRESET' || code === 'ETIMEDOUT' || code === 'UND_ERR_SOCKET';
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function withRetry(fn, label) {
+  const delays = [200, 800, 2000];
+  let lastErr;
+  for (let attempt = 0; attempt <= delays.length; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      if (attempt === delays.length || !isTransient(err)) throw err;
+      console.warn(`[db] transient error on ${label} (attempt ${attempt + 1}): ${err.message}`);
+      await sleep(delays[attempt]);
+    }
+  }
+  throw lastErr;
+}
+
+export const db = new Proxy(rawClient, {
+  get(target, prop) {
+    const value = target[prop];
+    if (typeof value !== 'function') return value;
+    if (prop === 'execute' || prop === 'batch') {
+      return (...args) => withRetry(() => value.apply(target, args), String(prop));
+    }
+    return value.bind(target);
+  },
+});
 
 export async function initSchema() {
   await db.execute(`
