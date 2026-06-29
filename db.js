@@ -21,7 +21,7 @@ function isTransient(err) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function withRetry(fn, label) {
-  const delays = [200, 800, 2000];
+  const delays = [500, 1500, 4000, 8000];
   let lastErr;
   for (let attempt = 0; attempt <= delays.length; attempt++) {
     try {

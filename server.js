@@ -43,8 +43,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Forward async route rejections to the error middleware instead of crashing the process.
+const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+
 // List
-app.get('/', async (req, res) => {
+app.get('/', wrap(async (req, res) => {
   maybeTriggerBatchRefresh();
   const q = (req.query.q || '').trim();
   const status = req.query.status === 'wishlist' ? 'wishlist' : 'owned';
@@ -98,17 +101,17 @@ app.get('/', async (req, res) => {
   );
   const wishlistHitCount = Number(hitRow.rows[0]?.n || 0);
   res.render('index', { albums: result.rows, q, sort, status, countsByStatus, wishlistHitCount });
-});
+}));
 
 // Manual batch refresh trigger (for external cron / GitHub Actions)
-app.post('/api/refresh-prices', async (req, res) => {
+app.post('/api/refresh-prices', wrap(async (req, res) => {
   const secret = process.env.REFRESH_SECRET;
   const auth = (req.headers.authorization || '').replace(/^Bearer\s+/, '');
   if (!secret || auth !== secret) return res.status(401).json({ error: 'unauthorized' });
   lastBatchRefreshAt = 0;
   maybeTriggerBatchRefresh();
   res.json({ status: 'started' });
-});
+}));
 
 // iTunes preview lookup
 app.get('/api/itunes/preview', async (req, res, next) => {
@@ -207,6 +210,14 @@ async function fetchMarketplaceMaxUsd(releaseId) {
 let lastBatchRefreshAt = 0;
 let batchRefreshInFlight = null;
 
+function startOfTodayMs() {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+}
+function isMondayToday() {
+  return new Date().getDay() === 1;
+}
+
 async function refreshAllAlbums() {
   const result = await db.execute(
     `SELECT id, discogs_release_id, last_priced_at, last_price_usd
@@ -228,7 +239,8 @@ async function refreshAllAlbums() {
 
 function maybeTriggerBatchRefresh() {
   if (batchRefreshInFlight) return;
-  if (Date.now() - lastBatchRefreshAt < 23 * 3600 * 1000) return;
+  if (!isMondayToday()) return;
+  if (lastBatchRefreshAt >= startOfTodayMs()) return;
   lastBatchRefreshAt = Date.now();
   batchRefreshInFlight = refreshAllAlbums()
     .catch((err) => {
@@ -241,7 +253,7 @@ function maybeTriggerBatchRefresh() {
 async function refreshPriceIfStale(album, { force = false } = {}) {
   if (!album.discogs_release_id) return album;
   const lastTs = album.last_priced_at ? new Date(album.last_priced_at).getTime() : 0;
-  const fresh = Date.now() - lastTs < 24 * 3600 * 1000;
+  const fresh = !isMondayToday() || lastTs >= startOfTodayMs();
   if (!force && fresh && album.last_price_usd != null) return album;
   const usd = await fetchMarketplaceMaxUsd(album.discogs_release_id);
   if (usd == null) return album;
@@ -390,7 +402,7 @@ app.get('/albums/new', (req, res) => {
 });
 
 // Create
-app.post('/albums', upload.single('cover'), async (req, res) => {
+app.post('/albums', upload.single('cover'), wrap(async (req, res) => {
   const { title, artist, year, genre, label, notes, cover_url, purchase_price, purchase_date, discogs_release_id, target_price } = req.body;
   const status = req.body.status === 'wishlist' ? 'wishlist' : 'owned';
   const targetPriceKrw = status === 'wishlist' && target_price
@@ -436,7 +448,7 @@ app.post('/albums', upload.single('cover'), async (req, res) => {
   });
 
   res.redirect(`/albums/${result.lastInsertRowid}`);
-});
+}));
 
 // Convert wishlist → owned
 app.post('/albums/:id/convert', async (req, res, next) => {
@@ -461,7 +473,7 @@ app.post('/albums/:id/convert', async (req, res, next) => {
 });
 
 // Detail
-app.get('/albums/:id', async (req, res) => {
+app.get('/albums/:id', wrap(async (req, res) => {
   const result = await db.execute({
     sql: `SELECT id, title, artist, year, genre, label, notes, cover_mime, created_at,
                  purchase_price, purchase_date, discogs_release_id,
@@ -472,7 +484,7 @@ app.get('/albums/:id', async (req, res) => {
   if (!result.rows.length) return res.status(404).render('error', { message: 'Not found' });
   const album = await refreshPriceIfStale(result.rows[0]);
   res.render('show', { album });
-});
+}));
 
 // Price history (monthly max)
 app.get('/albums/:id/price-history', async (req, res, next) => {
@@ -495,7 +507,7 @@ app.get('/albums/:id/price-history', async (req, res, next) => {
 });
 
 // Cover image
-app.get('/albums/:id/cover', async (req, res) => {
+app.get('/albums/:id/cover', wrap(async (req, res) => {
   const result = await db.execute({
     sql: `SELECT cover, cover_mime FROM albums WHERE id = ?`,
     args: [req.params.id],
@@ -512,10 +524,10 @@ app.get('/albums/:id/cover', async (req, res) => {
   res.set('Cache-Control', 'public, max-age=31536000, immutable');
   res.set('ETag', etag);
   res.send(buf);
-});
+}));
 
 // Edit form
-app.get('/albums/:id/edit', async (req, res) => {
+app.get('/albums/:id/edit', wrap(async (req, res) => {
   const result = await db.execute({
     sql: `SELECT id, title, artist, year, genre, label, notes, cover_mime,
                  purchase_price, purchase_date, discogs_release_id, cover_version, status, target_price_krw
@@ -524,10 +536,10 @@ app.get('/albums/:id/edit', async (req, res) => {
   });
   if (!result.rows.length) return res.status(404).render('error', { message: 'Not found' });
   res.render('edit', { album: result.rows[0], errors: [], discogsEnabled: !!DISCOGS_TOKEN });
-});
+}));
 
 // Update
-app.put('/albums/:id', upload.single('cover'), async (req, res) => {
+app.put('/albums/:id', upload.single('cover'), wrap(async (req, res) => {
   const {
     title, artist, year, genre, label, notes, remove_cover,
     purchase_price, purchase_date, discogs_release_id, cover_url, target_price,
@@ -614,14 +626,14 @@ app.put('/albums/:id', upload.single('cover'), async (req, res) => {
   }
 
   res.redirect(`/albums/${req.params.id}`);
-});
+}));
 
 // Delete
-app.delete('/albums/:id', async (req, res) => {
+app.delete('/albums/:id', wrap(async (req, res) => {
   await db.execute({ sql: `DELETE FROM price_history WHERE album_id = ?`, args: [req.params.id] });
   await db.execute({ sql: `DELETE FROM albums WHERE id = ?`, args: [req.params.id] });
   res.redirect('/');
-});
+}));
 
 // 404
 app.use((req, res) => {
