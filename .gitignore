@@ -1,4 +1,5 @@
 .env
+.kona-proxy-ca.pem
 node_modules/
 npm-debug.log*
 .DS_Store
